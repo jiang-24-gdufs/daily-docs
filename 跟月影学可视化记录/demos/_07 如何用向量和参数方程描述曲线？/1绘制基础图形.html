@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <h1>通过 canvas api来绘制多边形</h1>
+    <canvas width="512" height="256" class="canvas1"></canvas>
+  </body>
+  <script type="module">
+    import { Vector2D } from './vector2d.js';
+
+    const ctx = document.querySelector('.canvas1').getContext('2d');
+
+    const draw = (window.draw = points => {
+      debugger;
+      ctx.beginPath();
+      ctx.strokeStyle = 'blue';
+      let isDrawing = false;
+      points.forEach(point => {
+        if (!isDrawing) {
+          ctx.moveTo(...point);
+          isDrawing = true;
+        } else {
+          ctx.lineTo(...point);
+        }
+      });
+      ctx.stroke();
+    });
+
+    function regularShape(edges = 3, x, y, step) {
+      const ret = [];
+      const delta = Math.PI * (1 - (edges - 2) / edges);
+      let p = new Vector2D(x, y);
+      const dir = new Vector2D(step, 0);
+      ret.push(p);
+      for (let i = 0; i < edges; i++) {
+        p = p.copy().add(dir.rotate(delta));
+        ret.push(p);
+      }
+      return ret;
+    }
+    window.regularShape = regularShape;
+
+    draw(regularShape(3, 128, 128, 100)); // 绘制三角形
+    draw(regularShape(6, 192, 128, 50)); // 绘制六边形
+    draw(regularShape(11, 256, 128, 30)); // 绘制十一边形
+    draw(regularShape(60, 320, 128, 6)); // 绘制六十边形
+  </script>
+</html>

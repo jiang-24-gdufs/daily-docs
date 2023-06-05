@@ -1,0 +1,111 @@
+<!--
+ * @Author: jiangh<jiangh@southzn.com>
+ * @Date: 2021-04-26 14:01:52
+ * @LastEditors: jiangh<jiangh@southzn.com>
+ * @LastEditTime: 2021-04-26 16:42:59
+ * @Description: 
+-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      canvas {
+        border: 1px solid;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas width="1600" height="1600"></canvas>
+  </body>
+  <script src="./earcut.min.js"></script>
+  <script>
+/* 创建 WebGL 上下文 */
+const canvas = document.querySelector('canvas');
+const gl = canvas.getContext('webgl'); // 获取webgl上下文
+/* 创建 WebGL 程序 */
+const vertex /* 顶点 */ = `
+    attribute vec2 position;
+    
+    void main() {
+        gl_PointSize = 1.0;
+        // gl_Position = vec4(position, 1.0, 1.0);
+        gl_Position = vec4(position * 0.5, 1.0, 1.0); // position 的二维坐标都取原来的一半
+    }
+` 
+const fragment /* 图元/图片 */ = `
+    precision mediump float;
+
+    void main() {
+        gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); // 定义像素点的颜色rgba
+    }
+`
+
+// 创建 shader 对象
+const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+gl.shaderSource(vertexShader, vertex);
+gl.compileShader(vertexShader);
+
+const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+gl.shaderSource(fragmentShader, fragment);
+gl.compileShader(fragmentShader);
+
+// 创建 WebGLProgram 对象, 关联 shader
+const webglProgram = gl.createProgram();
+gl.attachShader(webglProgram, vertexShader);
+gl.attachShader(webglProgram, fragmentShader);
+gl.linkProgram(webglProgram);
+
+// 通过 useProgram 选择启用这个 WebGLProgram 对象
+gl.useProgram(webglProgram);
+
+/* 将数据存入缓冲区 */
+
+const vertices = [
+  [-0.7, 0.5],
+  [-0.4, 0.3],
+  [-0.25, 0.71],
+  [-0.1, 0.56],
+  [-0.1, 0.13],
+  [0.4, 0.21],
+  [0, -0.6],
+  [-0.3, -0.3],
+  [-0.6, -0.3],
+  [-0.45, 0.0],
+];
+let points = vertices.flat();
+const triangles = earcut(points);
+
+/* 注意数据类型 */
+points = new Float32Array(points);
+const cells = new Uint16Array(triangles);
+
+// 将定义好的数据写入 WebGL 的缓冲区
+const bufferId = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, bufferId);
+gl.bufferData(gl.ARRAY_BUFFER, points, gl.STATIC_DRAW);
+
+/* 将缓冲区数据读取到 GPU */
+const vPosition = gl.getAttribLocation(webglProgram, 'position'); //获取顶点着色器中的position变量的地址
+//指定一个顶点attributes 数组中，顶点attributes 变量的数据格式和位置。 给变量设置长度和类型
+gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0); 
+gl.enableVertexAttribArray(vPosition); // 激活变量
+
+/* cells */
+const cellsBuffer = gl.createBuffer();
+gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cellsBuffer);
+gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, cells, gl.STATIC_DRAW);
+
+/* 执行着色器程序完成绘制 */
+gl.clear(gl.COLOR_BUFFER_BIT);
+// gl.drawArrays(gl.TRIANGLES, 0, points.length / 2);
+// gl.drawArrays(gl.LINE_LOOP, 0, points.length / 2);
+
+// gl.drawElements(gl.TRIANGLES, cells.length, gl.UNSIGNED_SHORT, 0);
+gl.drawElements(gl.LINE_STRIP, cells.length, gl.UNSIGNED_SHORT, 0);
+  </script>
+
+</html>

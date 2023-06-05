@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      canvas {
+        border: 1px solid;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas width="1600" height="1600"></canvas>
+  </body>
+  <script src="./d3.v6.min.js"></script>
+  <script>
+  
+const dataSource = 'https://s5.ssl.qhres.com/static/b0695e2dd30daa64.json';
+(async function () {
+    const canvas = document.querySelector('canvas');
+    const canvasRect = canvas.getBoundingClientRect();
+    const context = canvas.getContext('2d');
+    const data = await (await fetch(dataSource)).json();
+
+    let mousePosition = [-1, -1];
+
+    const regions = d3
+        .hierarchy(data)
+        .sum((d) => 1)
+        .sort((a, b) => b.value - a.value);
+
+    const pack = d3.pack().size([1600, 1600]).padding(3);
+
+    const root = pack(regions);
+
+    const TAU = 2 * Math.PI;
+
+    const getDistance = (point1, point2) => {
+        return Math.sqrt(Math.pow((point1[0] - point2[0]), 2) + Math.pow((point1[1] - point2[1]), 2));
+    }
+
+    const draw = (
+        ctx,
+        node,
+        { fillStyle = 'rgba(0, 0, 0, 0.2)', textColor = 'white' } = {}
+    ) => {
+        const children = node.children;
+        const { x, y, r } = node;
+
+        const distance = getDistance(mousePosition, [x, y]);
+        if(distance < r && !children) { // 判断距离
+            fillStyle = 'red';
+        }
+
+        ctx.fillStyle = fillStyle;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, TAU);
+        ctx.fill();
+
+        if (children) {
+            children.forEach((child) => {
+                draw(ctx, child);
+            });
+        } else {
+            const name = node.data.name;
+            ctx.fillStyle = textColor;
+            ctx.font = '1.5rem Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(name, x, y);
+        }
+    };
+
+    draw(context, root);
+
+    /* 复制过来的作业 */
+
+    const redraw = () => {
+        context.clearRect(0, 0, 1600, 1600);
+        draw(context, root);
+    }
+    
+    let lastIsInside = false;
+
+    document.addEventListener('mousemove' ,(e) => {
+        mousePosition = [(e.clientX - canvasRect.left) / (canvasRect.width / 1600), (e.clientY - canvasRect.top)  / (canvasRect.height / 1600)];
+
+        let isInside = false;
+        const judgeIsInside = (node) => {
+            const children = node.children;
+            const { x, y, r } = node;
+
+            if (children) {
+                children.forEach((child) => {
+                    judgeIsInside(child);
+                });
+            } else {
+                const distance = getDistance(mousePosition, [x, y]);
+                if(distance < r) {
+                    isInside = true;
+                    return;
+                }
+            }
+        }
+        judgeIsInside(root);
+        if(isInside || isInside !== lastIsInside) {
+            redraw();
+        }
+        lastIsInside = isInside;
+    })
+})();
+  </script>
+</html>

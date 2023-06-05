@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+      }
+      #a,
+      #p {
+        width: 49%;
+        height: 100%;
+        display: inline-block;
+      }
+    </style>
+  </head>
+
+  <body>
+    <canvas id="a"></canvas>
+    <canvas id="p"></canvas>
+  </body>
+  <script type="module">
+    import * as THREE from './three.module.js';
+    import { OrbitControls } from './controls/OrbitControls.js';
+
+    window.three = THREE;
+
+    const color = 0xffffff;
+    const intensity = 1;
+    const ambientlight = new THREE.AmbientLight(color, intensity);
+    ambientlight.position.y = 5;
+    const pointlight = new THREE.PointLight(color, intensity);
+    pointlight.position.y = 5;
+
+    main('#a', ambientlight);
+    main('#p', pointlight);
+
+    function main(s, light) {
+      const canvas = document.querySelector(s);
+      const renderer = new THREE.WebGLRenderer({ canvas });
+
+      const fov = 75; // fov是视野范围(field of view)的缩写。
+      const aspect = 2; // 相机默认值 aspect指画布的宽高比。
+      const near = 0.1;
+      const far = 15;
+
+      const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+      const controls = new OrbitControls(camera, canvas);
+      camera.position.z = 10;
+
+      const scene = new THREE.Scene();
+
+      const boxWidth = 1;
+      const boxHeight = 1;
+      const boxDepth = 1;
+      const geometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
+      const material = new THREE.MeshPhongMaterial({ color: 0x44aa88 }); // 绿蓝色
+
+      const cube = new THREE.Mesh(geometry, material);
+      scene.add(cube);
+      cube.position.x = -1;
+
+      const sphereGeometry = new THREE.SphereGeometry(boxWidth);
+      const sphere = new THREE.Mesh(sphereGeometry, material);
+      scene.add(sphere);
+      sphere.position.x = 1;
+
+      // ADD MORE INTEREST
+      function makeInstance(geometry, color, x) {
+        const material = new THREE.MeshPhongMaterial({ color });
+
+        const cube = new THREE.Mesh(geometry, material);
+        scene.add(cube);
+
+        cube.position.x = x;
+
+        return cube;
+      }
+      const cubes = [
+        makeInstance(geometry, 0x44aa88, -3),
+        makeInstance(geometry, 0xaa8844, 3)
+      ];
+
+      // 将场景和摄像机传递给渲染器来渲染出整个场景。
+      // renderer.render(scene, camera);
+
+      // 创建一盏平行光
+      // const color = 0xffffff;
+      // const intensity = 1;
+      // const light = new THREE.DirectionalLight(color, intensity);
+      // 平行光有一个位置和目标点。默认值都为(0, 0, 0)。
+      // light.position.set(-1, 2, 4);
+      /**
+       * 将灯光的位置设为(-1, 2, 4)，让它位于摄像机前面稍微左上方一点的地方。
+       * 目标点还是(0, 0, 0)，让它朝向坐标原点方向。
+       */
+      scene.add(light);
+
+      /**
+       * 来让立方体旋转起来，以便更好的在三维环境中显示。
+       * 为了让它动起来我们需要用到一个渲染循环函数 requestAnimationFrame.
+       */
+
+      function resizeRendererToDisplaySize(renderer) {
+        const canvas = renderer.domElement;
+        const pixelRatio = window.devicePixelRatio;
+        const width = (canvas.clientWidth * pixelRatio) | 0;
+        const height = (canvas.clientHeight * pixelRatio) | 0;
+        const needResize = canvas.width !== width || canvas.height !== height;
+        if (needResize) {
+          renderer.setSize(width, height, false);
+        }
+        return needResize;
+      }
+
+      function render(time) {
+        time *= 0.001;
+
+        if (resizeRendererToDisplaySize(renderer)) {
+          const canvas = renderer.domElement;
+          camera.aspect = canvas.clientWidth / canvas.clientHeight;
+          camera.updateProjectionMatrix();
+        }
+
+        cubes.forEach((cube, ndx) => {
+          const speed = 1 + ndx * 0.1;
+          const rot = time * speed;
+          cube.rotation.x = rot;
+          cube.rotation.y = rot;
+        });
+
+        controls.update();
+
+        renderer.render(scene, camera);
+
+        requestAnimationFrame(render);
+      }
+      requestAnimationFrame(render); // 开始整个渲染循环。
+    }
+  </script>
+</html>

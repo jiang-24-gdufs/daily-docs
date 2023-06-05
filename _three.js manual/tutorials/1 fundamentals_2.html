@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+
+  <body>
+    <canvas id="c"></canvas>
+  </body>
+  <script type="module">
+    import * as THREE from './three.module.js';
+    main();
+    function main() {
+      // 使用这个canvas标签来绘制，所以我们要先获取它然后传给three.js。
+      const canvas = document.querySelector('#c');
+      // 拿到canvas后我们需要创建一个WebGL渲染器(WebGLRenderer)。
+      const renderer = new THREE.WebGLRenderer({ canvas });
+
+      // 接下来我们需要一个透视摄像机(PerspectiveCamera)。
+      const fov = 75; // fov是视野范围(field of view)的缩写。
+      const aspect = 2; // 相机默认值 aspect指画布的宽高比。
+      // near和far代表近平面和远平面，它们限制了摄像机面朝方向的可绘区域。
+      const near = 0.1;
+      const far = 5;
+      /**
+       * 这四个参数定义了一个 "视椎(frustum)"。 视椎(frustum)是指一个像被削去顶部的金字塔形状。
+       * 换句话说，可以把"视椎(frustum)"想象成其他三维形状如球体、立方体、棱柱体、截椎体。
+       * 近平面和远平面的高度由视野范围决定，宽度由视野范围和宽高比决定。
+       * 视椎体内部的物体将被绘制，视椎体外的东西将不会被绘制。
+       */
+      const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+      /**
+       * 摄像机默认指向Z轴负方向，上方向朝向Y轴正方向。
+       * 我们将会把立方体放置在坐标原点，所以我们需要往后移一下摄像机才能显示出物体。
+       *
+       */
+      camera.position.z = 2;
+
+      // 场景(Scene)是three.js的基本的组成部分。需要three.js绘制的东西都需要加入到scene中
+      const scene = new THREE.Scene();
+
+      const boxWidth = 1;
+      const boxHeight = 1;
+      const boxDepth = 1;
+      const geometry = new THREE.BoxGeometry(boxWidth, boxHeight, boxDepth);
+      // 创建一个基本的材质并设置它的颜色.
+
+      // const material = new THREE.MeshBasicMaterial({ color: 0x44aa88 }); // remove when light added
+      // 改变下立方体的材质。MeshBasicMaterial材质不会受到灯光的影响
+      const material = new THREE.MeshPhongMaterial({color: 0x44aa88});  // 绿蓝色
+
+      // 创建一个网格(Mesh)对象
+      const cube = new THREE.Mesh(geometry, material);
+
+      scene.add(cube);
+      // 将场景和摄像机传递给渲染器来渲染出整个场景。
+      // renderer.render(scene, camera);
+
+      // 创建一盏平行光
+      const color = 0xffffff;
+      const intensity = 1;
+      const light = new THREE.DirectionalLight(color, intensity);
+      // 平行光有一个位置和目标点。默认值都为(0, 0, 0)。
+      light.position.set(-1, 2, 4);
+      /**
+       * 将灯光的位置设为(-1, 2, 4)，让它位于摄像机前面稍微左上方一点的地方。
+       * 目标点还是(0, 0, 0)，让它朝向坐标原点方向。
+        */
+      scene.add(light);
+
+      /**
+       * 来让立方体旋转起来，以便更好的在三维环境中显示。
+       * 为了让它动起来我们需要用到一个渲染循环函数 requestAnimationFrame.
+       */
+
+      function render(time) {
+        time *= 0.001; // 将时间单位变为秒
+
+        cube.rotation.x = time;
+        cube.rotation.y = time;
+
+        renderer.render(scene, camera);
+
+        requestAnimationFrame(render);
+      }
+      requestAnimationFrame(render); // 开始整个渲染循环。
+    }
+  </script>
+</html>

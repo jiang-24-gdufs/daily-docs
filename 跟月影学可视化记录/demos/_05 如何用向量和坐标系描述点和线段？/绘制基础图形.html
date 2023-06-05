@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  绘制目标: 要在宽 512 * 高 256 的一个 Canvas 画布上实现如下的视觉效果。其中，山的高度是 100，底边 200，两座山的中心位置到中线的距离都是 80，太阳的圆心高度是 150。<br>
+  <img src="target.jpeg" alt="" width="512" height="256">
+  <img src="target-tagged.jpeg" alt="" width="512" height="256">
+  <hr>
+  <canvas width="512" height="256" class="canvas1"></canvas>
+  <canvas width="512" height="256" class="canvas2"></canvas>
+</body>
+<script src="rough.js"></script>
+<script>
+const hillOpts = {roughness: 2.8, strokeWidth: 2, fill: 'blue'};
+const sunOpts = {stroke: 'red', strokeWidth: 4, fill: 'rgba(255, 255, 0, 0.4)', fillStyle: 'solid'}
+{
+  const rc = rough.canvas(document.querySelector('.canvas1'));
+  // 通过计算得到的坐标点来绘制
+  rc.path('M76 256L176 156L276 256', hillOpts);
+  rc.path('M236 256L336 156L436 256', hillOpts);
+  rc.circle(256, 106, 105, sunOpts);
+}
+
+{
+  /* ---- 坐标转换 ---- */
+  const rc = rough.canvas(document.querySelector('.canvas2'));
+  const ctx = rc.ctx;
+  ctx.translate(256, 256); /* 对Canvas坐标系进行整体位移, 把原点移动到底部中点 */
+  ctx.scale(1, -1); /* 由于y轴正向朝下, 导致绘制的坐标位于X轴下方, 无法被canvas完整绘制, 需要进行一次垂直翻转 */
+
+  /* 
+  我们通过 translate 变换将 Canvas 画布的坐标原点，从左上角 (0, 0) 点移动至 (256, 256) 位置，即画布的底边上的中点位置。
+  接着，以移动了原点后新的坐标为参照，通过 scale(1, -1) 将 y 轴向下的部分，即 y>0 的部分沿 x 轴翻转 180 度，
+  这样坐标系就变成以画布底边中点为原点，x 轴向右，y 轴向上的坐标系了。 */
+
+  /* 中心点移位后更加直观的的结算处坐标点 */
+  rc.path('M-180 0L-80 100L20 0', hillOpts);
+  rc.path('M-20 0L80 100L180 0', hillOpts);
+  rc.circle(0, 150, 105, sunOpts);
+}
+</script>
+</html>

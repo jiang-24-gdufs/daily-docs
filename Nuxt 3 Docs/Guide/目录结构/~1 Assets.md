@@ -1,0 +1,1 @@
+# [Assets](https://nuxt.com/docs/getting-started/assets#assets)

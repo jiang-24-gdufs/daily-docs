@@ -1,0 +1,1 @@
+[Vue 3 将成为新的默认版本 - 知乎 (zhihu.com)](https://zhuanlan.zhihu.com/p/460055155)

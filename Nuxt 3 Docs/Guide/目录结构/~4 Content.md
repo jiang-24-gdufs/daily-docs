@@ -1,0 +1,1 @@
+# [Content Directory](https://nuxt.com/docs/guide/directory-structure/content#content-directory)

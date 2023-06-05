@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      height: 100%;
+    }
+
+    #c {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    #info {
+      position: absolute;
+      left: 1em;
+      top: 1em;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 0.5em;
+      color: white;
+      font-family: monospace;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- RESTART -->
+  <canvas id="c"></canvas>
+  <!-- <div id="info"></div> -->
+</body>
+<script type="module">
+  import * as THREE from './three.module.js';
+  window.three = THREE;
+  import GUI from './libs/lil-gui.module.min.js';
+  import { OrbitControls } from './controls/OrbitControls.js';
+  window.GUI = GUI;
+
+  function main() {
+    const canvas = document.querySelector('#c');
+    const renderer = new THREE.WebGLRenderer({ canvas: canvas });
+    renderer.setClearColor(0xaaaaaa);
+    renderer.shadowMap.enabled = true;
+
+    function makeCamera(fov = 40) {
+      const aspect = 2; // the canvas default
+      const zNear = 0.1;
+      const zFar = 1000;
+      return new THREE.PerspectiveCamera(fov, aspect, zNear, zFar);
+    }
+    const camera = makeCamera();
+    const controls = new OrbitControls(camera, canvas);
+
+    // camera.up.set(0, 0, 1);
+    // camera.position.set(8, 4, 10).multiplyScalar(3);
+    camera.position.set(0, 14, 0).multiplyScalar(3);
+    camera.lookAt(0, 0, 0);
+
+    const scene = new THREE.Scene();
+
+    {
+      // axesHelper
+      const axesHelper = new THREE.AxesHelper(100);
+      scene.add(axesHelper)
+    }
+
+    {
+      // GRID
+      const grid = new THREE.GridHelper(50, 50);
+      grid.material.depthTest = false;
+      grid.renderOrder = 1;
+      scene.add(grid);
+    }
+
+    {
+      const light = new THREE.DirectionalLight(0xffffff, 1);
+      light.position.set(0, 20, 0);
+      scene.add(light);
+      light.castShadow = true;
+      light.shadow.mapSize.width = 2048;
+      light.shadow.mapSize.height = 2048;
+
+      const d = 50;
+      light.shadow.camera.left = -d;
+      light.shadow.camera.right = d;
+      light.shadow.camera.top = d;
+      light.shadow.camera.bottom = -d;
+      light.shadow.camera.near = 1;
+      light.shadow.camera.far = 50;
+      light.shadow.bias = 0.001;
+    }
+
+    {
+      const light = new THREE.DirectionalLight(0xffffff, 1);
+      light.position.set(1, 2, 4);
+      scene.add(light);
+    }
+
+    {
+      // ground with grid
+      const groundObject = new THREE.Object3D();
+      scene.add(groundObject);
+      groundObject.rotation.x = Math.PI * -0.5;
+
+      const groundGeometry = new THREE.PlaneGeometry(50, 50);
+      const groundMaterial = new THREE.MeshPhongMaterial({ color: 0xcc8866 });
+      const groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
+      groundMesh.receiveShadow = true;
+      groundObject.add(groundMesh);
+
+    }
+
+
+    // tank = [tankbody + tankhead]
+    // tankbody => box + wheel * 6
+    const tankBody = new THREE.Object3D();
+    const tankPosition = new THREE.Vector2();
+    const tankTarget = new THREE.Vector2();
+
+    scene.add(tankBody);
+
+    // wheels 
+    let wheelsRotateMeshs = [];
+
+    {
+      // BOX
+      const carWidth = 4;
+      const carHeight = 1;
+      const carLength = 8;
+
+      const bodyGeometry = new THREE.BoxGeometry(
+        carWidth,
+        carHeight,
+        carLength
+      );
+      const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0x6688aa });
+      const bodyMesh = new THREE.Mesh(bodyGeometry, bodyMaterial);
+      tankBody.add(bodyMesh);
+      tankBody.position.y = 1; // 整体上移
+
+      {
+        // HEAD = [headSphere + turrent]
+        const domeRadius = 2;
+
+        const domeGeometry = new THREE.SphereGeometry(domeRadius)
+        const domeMesh = new THREE.Mesh(domeGeometry, bodyMaterial);
+        tankBody.add(domeMesh);
+
+        // turrent
+        const turretWidth = 0.1;
+        const turretHeight = 0.1;
+        const turretLength = carLength * 0.75 * 0.2;
+        const turretGeometry = new THREE.BoxGeometry(
+          turretWidth,
+          turretHeight,
+          turretLength
+        );
+        const turretMesh = new THREE.Mesh(turretGeometry, bodyMaterial);
+        turretMesh.scale.set(5, 5, 5);
+        turretMesh.position.y = 1.25;
+        turretMesh.position.z = 3.5;
+        tankBody.add(turretMesh);
+
+      }
+
+      // Wheel
+      const wheelRadius = 1;
+      const wheelThickness = 0.5;
+      const wheelSegments = 16;
+      const wheelGeometry = new THREE.CylinderGeometry(
+        wheelRadius, // top radius
+        wheelRadius, // bottom radius
+        wheelThickness, // height of cylinder
+        wheelSegments
+      );
+      const wheelMaterial = new THREE.MeshPhongMaterial({ color: 0x888888 });
+
+      // {
+      //   // single wheel
+      //   const wheelMesh = new THREE.Mesh(wheelGeometry, wheelMaterial);
+      //   // rotate blue axes (z) 
+      //   wheelMesh.rotation.z = Math.PI / 2
+
+      //   // position red axes (x)
+      //   wheelMesh.position.x = 2
+      //   // wheelMesh.position.z = 2
+
+      //   tankBody.add(wheelMesh);
+      // }
+
+
+      {
+        // wheels parent 
+        const wheelsObject = new THREE.Object3D();
+        // six wheels 
+        // positions
+        const wheelsPositions = [
+          { x: 2.25, z: -2.25 },
+          { x: 2.25, z: 0 },
+          { x: 2.25, z: 2.25 },
+          { x: -2.25, z: -2.25 },
+          { x: -2.25, z: 0 },
+          { x: -2.25, z: 2.25 },
+        ]
+
+        wheelsPositions.forEach(({ x, z }) => {
+          const wheelMesh = new THREE.Mesh(wheelGeometry, wheelMaterial);
+
+          // rotate blue axes (z) 
+          wheelMesh.rotation.z = Math.PI / 2
+
+          // position red axes (x)
+          wheelMesh.position.x = x
+          wheelMesh.position.z = z
+
+          wheelsRotateMeshs.push(wheelMesh);
+          wheelsObject.add(wheelMesh);
+        })
+        tankBody.add(wheelsObject);
+
+      }
+    }
+
+    // curve line
+    // Create a sine-like wave
+    const curve = new THREE.SplineCurve([
+      new THREE.Vector2(-10, 0),
+      new THREE.Vector2(-5, 5),
+      new THREE.Vector2(0, 0),
+      new THREE.Vector2(5, -5),
+      new THREE.Vector2(10, 0),
+      new THREE.Vector2(5, 10),
+      new THREE.Vector2(-5, 10),
+      new THREE.Vector2(-10, -10),
+      new THREE.Vector2(-15, -8),
+      new THREE.Vector2(-10, 0)
+    ]);
+    console.log(curve)
+
+    {
+      const points = curve.getPoints(100);
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const material = new THREE.LineBasicMaterial({ color: 0xff0000 });
+      const splineObject = new THREE.Line(geometry, material);
+      // 曲线点 z 为0, 即都在xoy平面, 进行翻转到xoz平面
+      splineObject.rotation.x = Math.PI * 0.5;
+      // 曲线稍微y轴往上, 不要有遮挡, 不然会有depthTest问题
+      splineObject.position.y = 0.05;
+
+      scene.add(splineObject);
+
+    }
+
+    function resizeRendererToDisplaySize(renderer) {
+      const canvas = renderer.domElement;
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      const needResize = canvas.width !== width || canvas.height !== height;
+      if (needResize) {
+        renderer.setSize(width, height, false);
+      }
+      return needResize;
+    }
+
+    function render(time) {
+      time *= 0.001;
+
+      if (resizeRendererToDisplaySize(renderer)) {
+        const canvas = renderer.domElement;
+      }
+
+      // ratate red axes
+      wheelsRotateMeshs.forEach(wheelsMesh => {
+        wheelsMesh.rotation.x = time;
+      })
+
+      // move tank
+      const tankTime = time * 0.05;
+      curve.getPointAt(tankTime % 1, tankPosition);
+      // next 1/100 step position
+      curve.getPointAt((tankTime + 0.01) % 1, tankTarget);
+      // move
+      tankBody.position.set(tankPosition.x, 0, tankPosition.y);
+
+      // 如何改变tank move时的一个朝向
+      tankBody.lookAt(tankTarget.x, 0, tankTarget.y);
+
+
+      controls.update();
+
+      renderer.render(scene, camera);
+
+      requestAnimationFrame(render);
+    }
+
+    requestAnimationFrame(render);
+  }
+
+  main();
+</script>
+
+</html>

@@ -1,0 +1,8 @@
+.DS_Store
+
+.vitepress/cache
+.vitepress/.temp
+.vitepress/config.ts.*
+.vitepress/dist
+
+.obsidian

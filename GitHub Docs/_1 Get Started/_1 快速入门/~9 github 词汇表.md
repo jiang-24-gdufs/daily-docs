@@ -1,0 +1,1 @@
+# [GitHub 词汇表 - GitHub Docs](https://docs.github.com/zh/get-started/quickstart/github-glossary)

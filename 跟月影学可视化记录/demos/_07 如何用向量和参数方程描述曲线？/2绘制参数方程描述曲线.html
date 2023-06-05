@@ -1,0 +1,95 @@
+<!--
+ * @Author: jiangh<jiangh@southzn.com>
+ * @Date: 2021-04-23 16:50:40
+ * @LastEditors: jiangh<jiangh@southzn.com>
+ * @LastEditTime: 2021-04-23 17:10:25
+ * @Description: 
+-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <h1>通过 canvas api来绘制多边形</h1>
+    <canvas width="512" height="256" class="canvas1"></canvas>
+  </body>
+  <script type="module">
+    import { Vector2D } from './vector2d.js';
+
+    const ctx = document.querySelector('.canvas1').getContext('2d');
+
+    const draw = (window.draw = points => {
+      // debugger;
+      ctx.beginPath();
+      ctx.strokeStyle = 'blue';
+      let isDrawing = false;
+      points.forEach(point => {
+        if (!isDrawing) {
+          ctx.moveTo(...point);
+          isDrawing = true;
+        } else {
+          ctx.lineTo(...point);
+        }
+      });
+      ctx.stroke();
+    });
+
+    const TAU_SEGMENTS = 60;
+    const TAU = Math.PI * 2;
+    // 圆弧曲线
+    function arc(x0, y0, radius, startAng = 0, endAng = Math.PI * 2) {
+      const ang = Math.min(TAU, endAng - startAng);
+      const ret = ang === TAU ? [] : [[x0, y0]];
+      const segments = Math.round((TAU_SEGMENTS * ang) / TAU);
+      for (let i = 0; i <= segments; i++) {
+        const x = x0 + radius * Math.cos(startAng + (ang * i) / segments);
+        const y = y0 + radius * Math.sin(startAng + (ang * i) / segments);
+        ret.push([x, y]);
+      }
+      return ret;
+    }
+
+    // 椭圆曲线 radiusX、radiusY 分别是椭圆的长轴和短轴
+    function ellipse(
+      x0,
+      y0,
+      radiusX,
+      radiusY,
+      startAng = 0,
+      endAng = Math.PI * 2
+    ) {
+      const ang = Math.min(TAU, endAng - startAng);
+      const ret = ang === TAU ? [] : [[x0, y0]];
+      const segments = Math.round((TAU_SEGMENTS * ang) / TAU);
+      for (let i = 0; i <= segments; i++) {
+        const x = x0 + radiusX * Math.cos(startAng + (ang * i) / segments);
+        const y = y0 + radiusY * Math.sin(startAng + (ang * i) / segments);
+        ret.push([x, y]);
+      }
+      return ret;
+    }
+
+    const LINE_SEGMENTS = 60;
+    // 抛物线, 其中 p 是常数，为焦点到准线的距离。
+    function parabola(x0, y0, p, min, max) {
+      const ret = [];
+      for (let i = 0; i <= LINE_SEGMENTS; i++) {
+        const s = i / 60;
+        const t = min * (1 - s) + max * s;
+        const x = x0 + 2 * p * t ** 2;
+        const y = y0 + 2 * p * t;
+        ret.push([x, y]);
+      }
+      return ret;
+    }
+
+    draw(parabola(0, 0, 5.5, -10, 10));
+    draw(arc(150, 150, 100));
+    draw(ellipse(350, 150, 100, 50));
+    draw(ellipse(350, 250, 50, 50, Math.PI*1.5));
+  </script>
+</html>
