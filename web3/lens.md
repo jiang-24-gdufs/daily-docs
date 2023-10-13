@@ -1,0 +1,1 @@
+[X 上的 ardizor 🧙‍♂️：“Want to make your first $100k in crypto? Start with airdrops 🪂 $LENS TOKEN has been CONFIRMED and has huge potential for an #airdrop. Ready to get started? Let me walk you through the steps 👇🧵: https://t.co/EEsPgtdwVu” / X (twitter.com)](https://twitter.com/ardizor/status/1641764221091459073)
